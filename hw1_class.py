@@ -98,7 +98,8 @@ class LSH:
                 end = start + self.r
                 band = signature[start:end]
                 bucket = self._hash_band(band)
-                buckets[bucket].append(id)# bucket store id for document
+                if id not in buckets[bucket]:
+                    buckets[bucket].append(id)# bucket store id for document
         
         candidate_pairs = set()
         for bucket, candidate in buckets.items():
