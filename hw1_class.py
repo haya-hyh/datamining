@@ -41,25 +41,25 @@ A class MinHashing that builds a minHash signature (in the form of a vector or a
 '''
 class MinHashing:
     def __init__(self, num_permu, vocas,seed=0):
-        self.num_permutations = num_permu
-        self.seed = seed
-        self.vocas = vocas
-        self.permutations = self._generate_permu()
+        self.num_permutations = num_permu # The number of permutations to generate for minhashing.
+        self.seed = seed # Random seed for reproducibility
+        self.vocas = vocas # vocabulary list representing all possible shingle indices.
+        self.permutations = self._generate_permu() # Generate the required permutations based on the vocabulary length
 
     def _generate_permu(self):
         np.random.seed(self.seed)
         permutations = []
         for _ in range(self.num_permutations):
-            permutation = np.random.permutation(len(self.vocas))
+            permutation = np.random.permutation(len(self.vocas)) # Create a random permutation of the indices of the vocabulary
             permutations.append(permutation)#0 is the first id----------------------------------------------------------
         return permutations
-
+    
     def compute_minhash_signature(self, shingles):
         signature = []       
-        shigles_01list = [1 if i in shingles else 0 for i in self.vocas]    
+        shigles_01list = [1 if i in shingles else 0 for i in self.vocas]    # Create a binary list where 1 indicates presence of a shingle and 0 absence
         for permutation in self.permutations:           
             for i in permutation:
-                
+                # find the first occurrence of a shingle in each permutation
                 if (shigles_01list[i]==1):
                    signature.append(i) 
                    #signature.append(i+1)    
@@ -79,30 +79,34 @@ class CompareSignatures:
 
 class LSH:
     def __init__(self, num_bands, num_rows):
-        self.b = num_bands
-        self.r = num_rows
+        self.b = num_bands # number of bands
+        self.r = num_rows # number of rows per band
 
 
     def _hash_band(self, band):
-        band_str = ''.join(map(str, band))
+        band_str = ''.join(map(str, band)) # Convert the band into a single string
         #bucket_hash = hash(band_str)
+        # Use MD5 hashing to create a unique bucket identifier for the band
         bucket_hash = hashlib.md5(band_str.encode('utf-8')).hexdigest()
         return bucket_hash
     
 
     def find_candidate_pairs(self, signatures):
         buckets = defaultdict(list)
+        # Assign each document to buckets based on hashed bands
         for id, signature in signatures.items():
             for j in range(self.b):
                 start = j*self.r
                 end = start + self.r
-                band = signature[start:end]
+                band = signature[start:end] # retrieve all the rows for that band
+                # Hash the band to determine its bucket
                 bucket = self._hash_band(band)
                 buckets[bucket].append(id)# bucket store id for document
         
-        candidate_pairs = set()
+        # Generate candidate pairs from documents sharing the same bucket
+        candidate_pairs = set() # use set to avoid duplicates
         for bucket, candidate in buckets.items():
-            if len(candidate) > 1:
+            if len(candidate) > 1: # If a bucket contains more than one document, it means each candidate in the bucket can form a pair with another in the same bucket
                 for i in range(len(candidate)):
                     for j in range(i + 1, len(candidate)):
                         candidate_pairs.add((candidate[i], candidate[j]))
