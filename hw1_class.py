@@ -3,6 +3,9 @@ import numpy as np
 import hashlib
 from collections import defaultdict
 
+'''
+A class Shingling that constructs k–shingles of a given length k (e.g., 10) from a given document, computes a hash value for each unique shingle and represents the document in the form of an ordered set of its hashed k-shingles.
+'''
 class Shingling:
     def __init__(self, k):
         self.k = k
@@ -10,31 +13,33 @@ class Shingling:
     def shingle(self, document):
         shingles = set()
         for i in range(len(document) - self.k + 1):
-            shingle = document[i:i + self.k]
-            shingle_hash = int(hashlib.md5(shingle.encode('utf-8')).hexdigest(), 16) % (2**32)
+            shingle = document[i:i + self.k] # create shingle of length k
+            shingle_hash = int(hashlib.md5(shingle.encode('utf-8')).hexdigest(), 16) % (2**32) # hash the shingle and restrict the hash to fit within a 32-bit integer range
             #shingle_hash = hash(shingle) % (2**32)
-            shingles.add(shingle_hash)
-        shingles = list(shingles)
+            shingles.add(shingle_hash) # keep in set to ensure uniqueness
+        shingles = list(shingles) # convert back to list
         return shingles
     
-    def vocas_from_documents(self, *documents):      
+    def vocas_from_documents(self, *documents): 
+        # take multiple documents to generate the shingles for each document and combine them to know what are the shingles across all documents. universal set. 
         vocas = set()
         for document in documents:
             vocas.update(self.shingle(document))
         vocas = list(vocas)
         return vocas
 
-
+'''
+A class CompareSets computes the Jaccard similarity of two sets of integers – two sets of hashed shingles.
+'''
 class CompareSets:
     @staticmethod
     def jaccard_similarity(set1, set2):
-        intersection = set1.intersection(set2)
-        union = set1.union(set2)
-        return len(intersection) / len(union)
+        return len(set1.intersection(set2)) / len(set1.union(set2))
 
 
-
-
+'''
+A class MinHashing that builds a minHash signature (in the form of a vector or a set) of a given length n from a given set of integers (a set of hashed shingles).
+'''
 class MinHashing:
     def __init__(self, num_permu, vocas,seed=0):
         self.num_permutations = num_permu
@@ -63,10 +68,13 @@ class MinHashing:
         return signature
     
 
+'''
+A class CompareSignatures estimates the similarity of two integer vectors - minhash signatures - as a fraction of components in which they agree.
+'''
 class CompareSignatures:
     @staticmethod
     def compute_signature_similarity(signature1, signature2):
-        count = sum(1 for i in range(len(signature1)) if signature1[i] == signature2[i])
+        count = sum(1 for i in range(len(signature1)) if signature1[i] == signature2[i]) # calculate the number of rows where both signature is the same
         return count / len(signature1)
 
 
