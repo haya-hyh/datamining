@@ -101,7 +101,8 @@ class LSH:
                 band = signature[start:end] # retrieve all the rows for that band
                 # Hash the band to determine its bucket
                 bucket = self._hash_band(band)
-                buckets[bucket].append(id)# bucket store id for document
+                if id not in buckets[bucket]:
+                    buckets[bucket].append(id)# bucket store id for document
         
         # Generate candidate pairs from documents sharing the same bucket
         candidate_pairs = set() # use set to avoid duplicates
