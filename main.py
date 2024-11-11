@@ -9,7 +9,7 @@ k = 10
 num_permutations = 100
 num_bands = 20
 rows_per_band = 5
-similarity_threshold = 0.00000
+similarity_threshold = 0.6
 
 # shingling and generate vocabulary
 shingler = cs.Shingling(k)
