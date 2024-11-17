@@ -2,9 +2,9 @@ import apriorimodified as ap
 import readfile
 import aprioritid as aptid
 import time
-transactions = readfile.read_dataset('T10.dat')
-min_support = 20
-min_confidence = 0.0
+transactions = readfile.read_dataset('test.dat',5)
+min_support = 2
+min_confidence = 0.1
 
 # #apriori part
 # Start_time_apriori = time.time()
@@ -27,7 +27,9 @@ Stop_time_aprioritid = time.time()
 
 for i, frequent_itemsets in enumerate(apriori_tid.frequent_itemset_list):
     print(f"Frequent {i + 1}-itemsets: {frequent_itemsets}")
-
+    
+apriori_tid.generate_rule()
+print(apriori_tid.support_info)
 print(apriori_tid.rules)
 
 # to do list 
