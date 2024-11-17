@@ -4,6 +4,7 @@ from collections.abc import Iterable
 #c_k contain itemset and support while lk and cK contain only item set 
 #t_k contain id and itemset
 #k is the length of itemset
+#support_info contain all the frequentitemset and their support
 class AprioriTid:
     def __init__(self, min_support, min_confidence,kmax=2):
         self.s = min_support
@@ -22,9 +23,17 @@ class AprioriTid:
             t_1[tid]={frozenset([item]) for item in transaction}
         return c_1, t_1
 
+    # def filter_candidates(self, candidates):
+    #     return [key for key, value in candidates.items() if value >= self.s]
+    
     def filter_candidates(self, candidates):
-        return [key for key, value in candidates.items() if value >= self.s]
-
+        filtered_candidates = []
+        for key, value in candidates.items():
+            if value >= self.s:
+                filtered_candidates.append(key)  
+                self.support_info[key] = value  
+        return filtered_candidates 
+    
     def apriori_gen(self, l_k_minus1):
         Ck = []
         len_k = len(l_k_minus1)
@@ -54,12 +63,18 @@ class AprioriTid:
                 t_k[tid] = new_candidate_set
         return t_k
 
-    def filter_candidates_from_Tk(self, Ck, Tk):
+    def filter_candidates_from_Tk(self, ck,Tk):
         candidate_count = defaultdict(int)
         for candidate_set in Tk.values():
             for candidate in candidate_set:
                 candidate_count[candidate] += 1
-        return [candidate for candidate, count in candidate_count.items() if count >= self.s]
+        filtered = []
+        for candidate, count in candidate_count.items():
+            if count >= self.s:
+                filtered.append(candidate)
+                self.support_info[candidate] = count  
+        return filtered
+       
 
     def apriori_search(self, transactions):
         c_1, T = self.create_C1(transactions)
@@ -78,4 +93,23 @@ class AprioriTid:
             k += 1
             if(k>self.kmax):break
 
+# bonus part
+    def calculate_confidence(self, x, y):
+        "x->y"
+        x_support = self.support_info[x]
+        y_support = self.support_info[x.union(y)]
+        return y_support / x_support
 
+
+
+    def generate_rule(self):
+        for frequent_itemsets in self.frequent_itemset_list[1:]:
+            for itemset in frequent_itemsets:
+                for i in range(1, len(itemset)):
+                    for subset in itertools.combinations(itemset, i):
+                        x = frozenset(subset)
+                        y = itemset - x
+                        if y:
+                            confidence = self.calculate_confidence(x, y)
+                            if confidence >= self.c:
+                                self.rules.append((x, y, confidence))
