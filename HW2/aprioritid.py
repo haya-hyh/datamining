@@ -107,7 +107,7 @@ class AprioriTid:
             for itemset in frequent_itemsets:
                 for i in range(1, len(itemset)):
                     for subset in itertools.combinations(itemset, i):
-                        x = frozenset(subset)
+                        x = frozenset(subset)                       
                         y = itemset - x
                         if y:
                             confidence = self.calculate_confidence(x, y)
