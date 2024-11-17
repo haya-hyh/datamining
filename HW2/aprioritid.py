@@ -3,7 +3,7 @@ import itertools
 from collections.abc import Iterable
 #c_k contain itemset and support while lk and cK contain only item set 
 #t_k contain id and itemset
-
+#k is the length of itemset
 class AprioriTid:
     def __init__(self, min_support, min_confidence,kmax=2):
         self.s = min_support
@@ -11,7 +11,7 @@ class AprioriTid:
         self.kmax = kmax
         self.frequent_itemset_list = []
         self.rules = []
-        self.transactions = []
+        self.support_info={}
 
     def create_C1(self, transactions):
         c_1 = defaultdict(int)
@@ -77,6 +77,5 @@ class AprioriTid:
                 self.frequent_itemset_list.append(lk)
             k += 1
             if(k>self.kmax):break
-
 
 
