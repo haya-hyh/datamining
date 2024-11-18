@@ -1,12 +1,9 @@
 from collections import defaultdict
 import itertools
 from collections.abc import Iterable
-#c_k contain itemset and support while lk and cK contain only item set 
-#t_k contain id and itemset
-#k is the length of itemset
-#support_info contain all the frequentitemset and their support
+
 class AprioriTid:
-    def __init__(self, min_support, min_confidence,n,kmax=2):
+    def __init__(self, min_support, min_confidence, n, kmax=2):
         self.s = min_support
         self.c = min_confidence
         self.kmax = kmax
@@ -14,100 +11,92 @@ class AprioriTid:
         self.frequent_itemset_list = []
         self.rules = []
         self.interest = []
-        self.support_info={}
+        self.support_info = {}
 
     def create_C1(self, transactions):
         c_1 = defaultdict(int)
         t_1 = {}
         for tid, transaction in enumerate(transactions):
+            t_1[tid] = set()
             for item in transaction:
-                c_1[frozenset([item])] += 1
-            t_1[tid]={frozenset([item]) for item in transaction}
+                itemset = frozenset([item])
+                c_1[itemset] += 1
+                t_1[tid].add(itemset)
+        #filtered c_1
+        c_1 = {k: v for k, v in c_1.items() if v >= self.s}
+        self.support_info.update(c_1)
         return c_1, t_1
 
-    # def filter_candidates(self, candidates):
-    #     return [key for key, value in candidates.items() if value >= self.s]
-    
-    def filter_candidates(self, candidates):
-        filtered_candidates = []
-        for key, value in candidates.items():
-            if value >= self.s:
-                filtered_candidates.append(key)  
-                self.support_info[key] = value  
-        return filtered_candidates 
-    
     def apriori_gen(self, l_k_minus1):
-        Ck = []
-        len_k = len(l_k_minus1)
+        Ck = {}
+        items = list(l_k_minus1.keys())
+        len_k = len(items)
         for i in range(len_k):
             for j in range(i + 1, len_k):
-                l1 = sorted(list(l_k_minus1[i])) if isinstance(l_k_minus1[i], Iterable) else [l_k_minus1[i]]
-                l2 = sorted(list(l_k_minus1[j])) if isinstance(l_k_minus1[j], Iterable) else [l_k_minus1[j]]
+                l1 = sorted(list(items[i]))
+                l2 = sorted(list(items[j]))
                 if l1[:-1] == l2[:-1]:
                     candidate = frozenset(l1[:-1] + [l1[-1]] + [l2[-1]])
-                    if all(frozenset(subset) in l_k_minus1 for subset in itertools.combinations(candidate, len(candidate) - 1)):
-                        Ck.append(candidate)
+                    candidate_support = min(
+                        l_k_minus1.get(frozenset(subset), 0) for subset in itertools.combinations(candidate, len(candidate) - 1)
+                    )
+                    if candidate_support >= self.s:
+                        Ck[candidate] = 0
         return Ck
 
-    def generatetk_from_ck(self, tk_minus1, ck):
+    def generatetk_from_ck(self, tk_minus1, ck, k):
         t_k = {}
-        filtered = []
         candidate_count = defaultdict(int)
         for tid, candidate_set in tk_minus1.items():
             new_candidate_set = set()
-            for c in ck:
-                c_list = list(c)
-                if len(c_list) > 1:
+            for c in ck.keys():
+                if k == 2:
+                    if c[0] in candidate_set and c[1] in candidate_set:
+                        new_candidate_set.add(c)
+                        candidate_count[c] += 1
+                else:
+                    c_list = list(c)
                     if frozenset(c_list[:-1]) in candidate_set and frozenset(c_list[:-2] + c_list[-1:]) in candidate_set:
                         new_candidate_set.add(c)
                         candidate_count[c] += 1
-                        if candidate_count[c] == self.s :
-                            filtered.append(c)
-                            self.support_info[c] = candidate_count[c]
-                        else:
-                            self.support_info[c] += 1
+
             if new_candidate_set:
                 t_k[tid] = new_candidate_set
-        return t_k, filtered 
-
-
-       
+        filtered = {k: v  for k, v in candidate_count.items() if v >= self.s}
+        self.support_info.update(filtered)
+        return t_k, filtered
 
     def apriori_search(self, transactions):
-        c_1, T = self.create_C1(transactions)
-        l1 = self.filter_candidates(c_1)
-        self.frequent_itemset_list.append(l1)
-        
+        c_1, t_1 = self.create_C1(transactions)
+        self.frequent_itemset_list.append(c_1)
+
         k = 2
-        lk = l1
-        Tk = T
+        lk = c_1
+        Tk = t_1
         while lk:
             ck = self.apriori_gen(lk)
-            Tk,lk = self.generatetk_from_ck(Tk, ck)
+            Tk, lk = self.generatetk_from_ck(Tk, ck, k)
             if lk:
                 self.frequent_itemset_list.append(lk)
             k += 1
-            if(k>self.kmax):break
+            if k > self.kmax:
+                break
 
-# bonus part
     def calculate_confidence(self, x, y):
-        "x->y"
         x_support = self.support_info[x]
         y_support = self.support_info[x.union(y)]
         return y_support / x_support
 
-
-
     def generate_rule(self):
         for frequent_itemsets in self.frequent_itemset_list[1:]:
-            for itemset in frequent_itemsets:
+            for itemset, support in frequent_itemsets.items():
                 for i in range(1, len(itemset)):
                     for subset in itertools.combinations(itemset, i):
-                        x = frozenset(subset)                       
+                        x = frozenset(subset)
                         y = itemset - x
                         if y:
                             confidence = self.calculate_confidence(x, y)
-                            interest = confidence - self.support_info[y]/self.number_transaction
+                            interest = confidence - self.support_info[y] / self.number_transaction
                             if confidence >= self.c:
                                 self.rules.append((x, y, confidence))
-                                self.interest.append((x,y,interest))
+                                self.interest.append((x, y, interest))
