@@ -6,12 +6,14 @@ from collections.abc import Iterable
 #k is the length of itemset
 #support_info contain all the frequentitemset and their support
 class AprioriTid:
-    def __init__(self, min_support, min_confidence,kmax=2):
+    def __init__(self, min_support, min_confidence,n,kmax=2):
         self.s = min_support
         self.c = min_confidence
         self.kmax = kmax
+        self.number_transaction = n
         self.frequent_itemset_list = []
         self.rules = []
+        self.interest = []
         self.support_info={}
 
     def create_C1(self, transactions):
@@ -49,6 +51,8 @@ class AprioriTid:
 
     def generatetk_from_ck(self, tk_minus1, ck):
         t_k = {}
+        filtered = []
+        candidate_count = defaultdict(int)
         for tid, candidate_set in tk_minus1.items():
             new_candidate_set = set()
             for c in ck:
@@ -56,24 +60,17 @@ class AprioriTid:
                 if len(c_list) > 1:
                     if frozenset(c_list[:-1]) in candidate_set and frozenset(c_list[:-2] + c_list[-1:]) in candidate_set:
                         new_candidate_set.add(c)
-                else:
-                    if frozenset(c_list) in candidate_set:
-                        new_candidate_set.add(c)
+                        candidate_count[c] += 1
+                        if candidate_count[c] == self.s :
+                            filtered.append(c)
+                            self.support_info[c] = candidate_count[c]
+                        else:
+                            self.support_info[c] += 1
             if new_candidate_set:
                 t_k[tid] = new_candidate_set
-        return t_k
+        return t_k, filtered 
 
-    def filter_candidates_from_Tk(self, ck,Tk):
-        candidate_count = defaultdict(int)
-        for candidate_set in Tk.values():
-            for candidate in candidate_set:
-                candidate_count[candidate] += 1
-        filtered = []
-        for candidate, count in candidate_count.items():
-            if count >= self.s:
-                filtered.append(candidate)
-                self.support_info[candidate] = count  
-        return filtered
+
        
 
     def apriori_search(self, transactions):
@@ -86,8 +83,7 @@ class AprioriTid:
         Tk = T
         while lk:
             ck = self.apriori_gen(lk)
-            Tk = self.generatetk_from_ck(Tk, ck)
-            lk = self.filter_candidates_from_Tk(ck, Tk)
+            Tk,lk = self.generatetk_from_ck(Tk, ck)
             if lk:
                 self.frequent_itemset_list.append(lk)
             k += 1
@@ -111,5 +107,7 @@ class AprioriTid:
                         y = itemset - x
                         if y:
                             confidence = self.calculate_confidence(x, y)
+                            interest = confidence - self.support_info[y]/self.number_transaction
                             if confidence >= self.c:
                                 self.rules.append((x, y, confidence))
+                                self.interest.append((x,y,interest))
