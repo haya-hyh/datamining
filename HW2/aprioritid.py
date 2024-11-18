@@ -94,7 +94,7 @@ class AprioriTid:
         while len(lk) != 0:  # Repeat until no more frequent itemsets are found
             ck = self.apriori_gen(lk)  # Generate candidate itemsets of size k
             Tk = self.generatetk_from_ck(Tk, ck)  # Update Tk with new candidates
-            lk = self.filter_candidates_from_Tk(ck, Tk)  # Filter candidates to get frequent itemsets
+            lk = self.filter_candidates_from_Tk(Tk)  # Filter candidates to get frequent itemsets
             if lk:
                 self.frequent_itemset_list.append(lk) 
             k += 1
