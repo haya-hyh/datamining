@@ -41,8 +41,7 @@ class AprioriTid:
                         l_k_minus1.get(frozenset(subset), 0) for subset in itertools.combinations(candidate, len(candidate) - 1)
                     )
                     if candidate_support >= self.s:
-                        Ck[candidate] = candidate_support
-                        self.support_info[candidate] = candidate_support
+                        Ck[candidate] = 0
         return Ck
 
     def generatetk_from_ck(self, tk_minus1, ck, k):
@@ -68,12 +67,12 @@ class AprioriTid:
         return t_k, filtered
 
     def apriori_search(self, transactions):
-        c_1, T = self.create_C1(transactions)
+        c_1, t_1 = self.create_C1(transactions)
         self.frequent_itemset_list.append(c_1)
 
         k = 2
         lk = c_1
-        Tk = T
+        Tk = t_1
         while lk:
             ck = self.apriori_gen(lk)
             Tk, lk = self.generatetk_from_ck(Tk, ck, k)
