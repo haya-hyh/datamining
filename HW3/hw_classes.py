@@ -47,7 +47,7 @@ class Triest_Base:
     def estimation(self):
         if self.t <= self.M:
             return self.global_counter
-        scaling_factor = max(1, (self.t * (self.t - 1) * (self.t - 2)) / (self.M * (self.M - 1) * (self.M - 2)))
+        scaling_factor = max(1, ((self.t * (self.t - 1) * (self.t - 2)) / (self.M * (self.M - 1) * (self.M - 2))))
         return self.global_counter * scaling_factor
     
     def read_edges_from_file(file_path):
@@ -103,7 +103,7 @@ class Triest_Impr:
     def update_counters(self, edge, increment=True):
         u, v = edge
         shared_neighbors = self.get_shared_neighbours(u, v) 
-        n = max(1, ((self.t - 1) * (self.t - 2)) / self.M * (self.M - 1))
+        n = max(1, ((self.t - 1) * (self.t - 2) / self.M * (self.M - 1)))
         for vertex in shared_neighbors:
             if increment:
                 self.global_counter += n
@@ -117,10 +117,7 @@ class Triest_Impr:
                 self.local_counters[v] -= n
 
     def estimation(self):
-        if self.t <= self.M:
-            return self.global_counter
-        scaling_factor = max(1, (self.t * (self.t - 1) * (self.t - 2)) / (self.M * (self.M - 1) * (self.M - 2)))
-        return self.global_counter * scaling_factor
+        return self.global_counter
 
     def algo(self, edges):
         for edge in edges:
@@ -143,6 +140,7 @@ if __name__ == "__main__":
     edges = Triest_Base.read_edges_from_file(file_path)
     triest_base.algo(edges)
     print(triest_base.estimation())
+
 
     tries_impr = Triest_Impr(M)
     tries_impr.algo(edges)
