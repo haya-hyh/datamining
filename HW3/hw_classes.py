@@ -1,13 +1,15 @@
 from collections import defaultdict
 import random
+import time
 
 class Triest_Base:
-    def __init__(self, M=6):
+    def __init__(self, M):
         self.M = M
         self.S = set()
         self.t = 0
         self.global_counter = 0
         self.local_counters = defaultdict(int)
+
 
     def get_shared_neighbours(self, u, v):
         neighbors_u = {edge[1] for edge in self.S if edge[0] == u} | \
@@ -21,7 +23,7 @@ class Triest_Base:
         if self.t <= self.M:
             return True
 
-        elif random.randrange(self.M) <= (self.M / self.t):
+        elif random.random() < (self.M / self.t):
             edge_to_remove = random.choice(tuple(self.S))
             self.S.remove(edge_to_remove)
             self.update_counters(edge_to_remove, increment=False)
@@ -29,8 +31,9 @@ class Triest_Base:
         else:
             return False
             
-    def update_counters(self, edge, increment=True):
+    def update_counters(self, edge, increment):
         u, v = edge
+
         shared_neighbors = self.get_shared_neighbours(u, v)
         for vertex in shared_neighbors:
             if increment:
@@ -93,17 +96,17 @@ class Triest_Impr:
         if self.t <= self.M:
             return True
 
-        elif random.randrange(self.M) <= (self.M / self.t):
+        elif random.random() < (self.M / self.t):
             edge_to_remove = random.choice(tuple(self.S))
             self.S.remove(edge_to_remove)
             return True
         else:
             return False
             
-    def update_counters(self, edge, increment=True):
+    def update_counters(self, edge, increment):
         u, v = edge
         shared_neighbors = self.get_shared_neighbours(u, v) 
-        n = max(1, ((self.t - 1) * (self.t - 2) / self.M * (self.M - 1)))
+        n = max(1, (((self.t - 1) * (self.t - 2)) / (self.M * (self.M - 1))))
         for vertex in shared_neighbors:
             if increment:
                 self.global_counter += n
@@ -131,20 +134,23 @@ class Triest_Impr:
 
 if __name__ == "__main__":
     M = 1000
-    triest_base = Triest_Base(M)
 
     # File path to your dataset
     file_path = "web-NotreDame.txt"
 
+    base_time_start = time.time()
+    triest_base = Triest_Base(M)
     # Read edges from the file
     edges = Triest_Base.read_edges_from_file(file_path)
     triest_base.algo(edges)
     print(triest_base.estimation())
+    print(f"time take: {time.time() - base_time_start}")
 
-
+    impr_time_start = time.time()
     tries_impr = Triest_Impr(M)
     tries_impr.algo(edges)
     print(tries_impr.estimation())
+    print(f"time take: {time.time() - impr_time_start}")
     
 
     
