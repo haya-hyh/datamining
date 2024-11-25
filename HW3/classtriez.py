@@ -53,13 +53,13 @@ class TriestBase:
     def remove_edge_from_neigbor_list(self, u, v):
         if u in self.neigbor_list and v in self.neigbor_list[u]:
             self.neigbor_list[u].remove(v)
-            if not self.neigbor_list[u]:  
-                del self.neigbor_list[u]
+            # if not self.neigbor_list[u]:  
+            #     del self.neigbor_list[u]
 
         if v in self.neigbor_list and u in self.neigbor_list[v]:
             self.neigbor_list[v].remove(u)
-            if not self.neigbor_list[v]: 
-                del self.neigbor_list[v]
+            # if not self.neigbor_list[v]: 
+            #     del self.neigbor_list[v]
 
     def update_counters(self, u, v, add):
         common_neighbors = self.neigbor_list[u].intersection(self.neigbor_list[v])
@@ -92,16 +92,15 @@ class TriestImpr:
 
     def process_edge(self, edge):
         edge = self.normalize_edge(edge)
-
-        # if edge in self.sample:
-        #     return  
-        self.t += 1 
         u, v = edge
         if u == v:
             return  
 
-         
+        if edge in self.sample:
+            return  
+        self.t += 1 
 
+         
         weight = self.get_weight()
         self.update_counters(u, v, add=True, weight=weight)
 
@@ -114,7 +113,7 @@ class TriestImpr:
                 removed_edge = random.choice(list(self.sample))
                 self.sample.remove(removed_edge)
                 self.remove_edge_from_neigbor_list(*removed_edge)
-
+                # self.update_counters(*removed_edge, add=False, weight=weight)
                 self.sample.add(edge)
                 self.add_edge_to_neigbor_list(u, v)
 
@@ -130,13 +129,13 @@ class TriestImpr:
     def remove_edge_from_neigbor_list(self, u, v):
         if u in self.neigbor_list and v in self.neigbor_list[u]:
             self.neigbor_list[u].remove(v)
-            if not self.neigbor_list[u]:
-                del self.neigbor_list[u]
+            # if not self.neigbor_list[u]:
+            #     del self.neigbor_list[u]
 
         if v in self.neigbor_list and u in self.neigbor_list[v]:
             self.neigbor_list[v].remove(u)
-            if not self.neigbor_list[v]:
-                del self.neigbor_list[v]
+            # if not self.neigbor_list[v]:
+            #     del self.neigbor_list[v]
 
     def update_counters(self, u, v, add, weight):
         common_neighbors = self.neigbor_list[u].intersection(self.neigbor_list[v])
