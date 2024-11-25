@@ -1,14 +1,14 @@
 import readfile as rf
 import classtriez as cs
 import time
-
+import numpy as np
 # Load dataset
 dataset_path = "web-Stanford.txt/web-Stanford.txt"
 edges = rf.read_dataset(dataset_path)
 
 # Parameters
-sample_size = 4000
-num_runs = 5  
+sample_size = 10000
+num_runs = 5 
 true_triangle_num = 11329473  
 
 # Initialize results lists
@@ -18,6 +18,7 @@ impr_results = []
 # Run the experiments
 start_time = time.time()
 for run in range(num_runs):
+    print(f"running...{run+1}/{num_runs}: ")
     # Initialize algorithms for each run
     triest_base = cs.TriestBase(sample_size)
     triest_impr = cs.TriestImpr(sample_size)
@@ -28,17 +29,25 @@ for run in range(num_runs):
         triest_impr.process_edge(edge)
 
     # Store results
-    base_results.append(triest_base.estimate() / true_triangle_num)
+    base_results.append(triest_base.estimate()/ true_triangle_num)
     impr_results.append(triest_impr.estimate() / true_triangle_num)
 
 end_time = time.time()
 
 # Compute averages
-base_avg = sum(base_results) / num_runs
+k = 0
+base_avg = 0
+for i in base_results:
+    if i>1 :
+        k+=1
+        base_avg += i
+
+base_avg/=k
+    
 impr_avg = sum(impr_results) / num_runs
 
 
-print(f"\nTotal Time Taken: {(end_time - start_time)/num_runs:.2f} seconds")
+print(f"\nAverage Time Taken: {(end_time - start_time)/num_runs:.2f} seconds")
 # Output results
 print("TRIÈST-BASE Results:")
 print("  Individual Estimates:", base_results)
