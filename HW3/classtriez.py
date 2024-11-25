@@ -3,81 +3,66 @@ from collections import defaultdict
 
 class TriestBase:
     def __init__(self, sample_size):
-        """
-        初始化 TRIÈST-BASE 算法。
-        :param sample_size: 采样子集的大小
-        """
         self.sample_size = sample_size
-        self.sample = set()  # 用于存储采样的边
-        self.t = 0  # 已处理的边的数量
-        self.global_triangles = 0  # 全局三角形计数器
-        self.adjacency_list = defaultdict(set)  # 存储邻接表
+        self.sample = set()  # Stores the edge sample.
+        self.t = 0  # Tracks the number of processed edges.
+        self.global_triangles = 0  # Counter for global triangles.
+        self.neigbor_list = defaultdict(set)  # Stores the adjacency list.
+
+    def normalize_edge(self, edge):
+        """
+        In couting triagnles,should have edges(1,2)=(2,1)
+        """
+        u, v = edge
+        return (u, v) if u < v else (v, u)
 
     def process_edge(self, edge):
-        """
-        处理一条边并更新采样子集与三角形计数。
-        :param edge: 需要处理的边 (u, v)
-        """
-        self.t += 1
-        u, v = edge
+        edge = self.normalize_edge(edge)
 
+        if edge in self.sample:
+            return  # Skip duplicate edges without incrementing t.
+
+        u, v = edge
         if u == v:
-            return  # 忽略自环边
+            return  
+
+        self.t += 1  # Increment t only for unique edges.
 
         if len(self.sample) < self.sample_size:
-            # 采样子集未满，直接添加边
+            # Add edge to the sample directly if the sample is not full.
             self.sample.add(edge)
-            self.add_edge_to_adjacency_list(u, v)
+            self.add_edge_to_neigbor_list(u, v)
             self.update_counters(u, v, add=True)
         else:
-            # 采样子集已满，按概率替换边
-            prob = self.sample_size / self.t
-            if random.random() < prob:
+            # Replace an edge in the sample with a probability.
+            head = self.sample_size / self.t
+            if random.random() < head:
                 removed_edge = random.choice(list(self.sample))
                 self.sample.remove(removed_edge)
-                self.remove_edge_from_adjacency_list(*removed_edge)
+                self.remove_edge_from_neigbor_list(*removed_edge)
                 self.update_counters(*removed_edge, add=False)
-                
+
                 self.sample.add(edge)
-                self.add_edge_to_adjacency_list(u, v)
+                self.add_edge_to_neigbor_list(u, v)
                 self.update_counters(u, v, add=True)
 
-    def add_edge_to_adjacency_list(self, u, v):
-        """
-        将一条边添加到邻接表中。
-        :param u: 边的起点
-        :param v: 边的终点
-        """
-        self.adjacency_list[u].add(v)
-        self.adjacency_list[v].add(u)
+    def add_edge_to_neigbor_list(self, u, v):
+        self.neigbor_list[u].add(v)
+        self.neigbor_list[v].add(u)
 
-    def remove_edge_from_adjacency_list(self, u, v):
-        """
-        从邻接表中移除一条边。
-        :param u: 边的起点
-        :param v: 边的终点
-        """
-        # 安全删除 u -> v
-        if u in self.adjacency_list and v in self.adjacency_list[u]:
-            self.adjacency_list[u].remove(v)
-            if not self.adjacency_list[u]:  # 如果 u 无邻居
-                del self.adjacency_list[u]
+    def remove_edge_from_neigbor_list(self, u, v):
+        if u in self.neigbor_list and v in self.neigbor_list[u]:
+            self.neigbor_list[u].remove(v)
+            if not self.neigbor_list[u]:  
+                del self.neigbor_list[u]
 
-        # 安全删除 v -> u
-        if v in self.adjacency_list and u in self.adjacency_list[v]:
-            self.adjacency_list[v].remove(u)
-            if not self.adjacency_list[v]:  # 如果 v 无邻居
-                del self.adjacency_list[v]
+        if v in self.neigbor_list and u in self.neigbor_list[v]:
+            self.neigbor_list[v].remove(u)
+            if not self.neigbor_list[v]: 
+                del self.neigbor_list[v]
 
     def update_counters(self, u, v, add):
-        """
-        更新三角形计数器。
-        :param u: 边的起点
-        :param v: 边的终点
-        :param add: 如果为 True，则增加计数；否则减少计数
-        """
-        # 找到 u 和 v 的公共邻居
-        common_neighbors = self.adjacency_list[u].intersection(self.adjacency_list[v])
+        common_neighbors = self.neigbor_list[u].intersection(self.neigbor_list[v])
         delta = len(common_neighbors)
 
         if add:
@@ -85,124 +70,82 @@ class TriestBase:
         else:
             self.global_triangles -= delta
 
-    def get_estimate(self):
-        """
-        返回全局三角形数量的估算值。
-        """
+    def estimate(self):
         if self.t <= self.sample_size:
             return self.global_triangles
-        scaling_factor = ((self.t * (self.t - 1) * (self.t - 2)) /
+        factor = ((self.t * (self.t - 1) * (self.t - 2)) /
                           (self.sample_size * (self.sample_size - 1) * (self.sample_size - 2)))
-        return int(self.global_triangles * scaling_factor)
+        return int(self.global_triangles * factor)
+
 
 class TriestImpr:
     def __init__(self, sample_size):
-        """
-        初始化 TRIÈST-IMPR 算法。
-        :param sample_size: 采样子集的大小
-        """
         self.sample_size = sample_size
-        self.sample = set()  # 用于存储采样的边
-        self.t = 0  # 已处理的边的数量
-        self.global_triangles = 0  # 全局三角形计数器
-        self.adjacency_list = defaultdict(set)  # 存储邻接表
-        self.local_counters = defaultdict(float)  # 存储加权的局部计数器
+        self.sample = set()  # Stores the edge sample.
+        self.t = 0  # Tracks the number of processed edges.
+        self.global_triangles = 0  # Counter for global triangles.
+        self.neigbor_list = defaultdict(set)  # Stores the neigbor list.
+
+    def normalize_edge(self, edge):
+        u, v = edge
+        return (u, v) if u < v else (v, u)
 
     def process_edge(self, edge):
-        """
-        处理一条边并更新采样子集与三角形计数。
-        :param edge: 需要处理的边 (u, v)
-        """
-        self.t += 1
+        edge = self.normalize_edge(edge)
+
+        # if edge in self.sample:
+        #     return  
+        self.t += 1 
         u, v = edge
-
         if u == v:
-            return  # 忽略自环边
+            return  
 
-        # 计算权重因子 eta(t)
+         
+
         weight = self.get_weight()
-
-        # 无条件更新计数器
         self.update_counters(u, v, add=True, weight=weight)
 
         if len(self.sample) < self.sample_size:
-            # 采样子集未满，直接添加边
             self.sample.add(edge)
-            self.add_edge_to_adjacency_list(u, v)
+            self.add_edge_to_neigbor_list(u, v)
         else:
-            # 采样子集已满，按概率替换边
-            prob = self.sample_size / self.t
-            if random.random() < prob:
+            prob_head = self.sample_size / self.t
+            if random.random() < prob_head:
                 removed_edge = random.choice(list(self.sample))
                 self.sample.remove(removed_edge)
-                self.remove_edge_from_adjacency_list(*removed_edge)
-                
+                self.remove_edge_from_neigbor_list(*removed_edge)
+
                 self.sample.add(edge)
-                self.add_edge_to_adjacency_list(u, v)
+                self.add_edge_to_neigbor_list(u, v)
 
     def get_weight(self):
-        """
-        计算动态权重因子 eta(t)。
-        :return: 当前时间步的权重
-        """
         if self.t <= 2:
             return 1
         return max(1, ((self.t - 1) * (self.t - 2)) / (self.sample_size * (self.sample_size - 1)))
 
-    def add_edge_to_adjacency_list(self, u, v):
-        """
-        将一条边添加到邻接表中。
-        :param u: 边的起点
-        :param v: 边的终点
-        """
-        self.adjacency_list[u].add(v)
-        self.adjacency_list[v].add(u)
+    def add_edge_to_neigbor_list(self, u, v):
+        self.neigbor_list[u].add(v)
+        self.neigbor_list[v].add(u)
 
-    def remove_edge_from_adjacency_list(self, u, v):
-        """
-        从邻接表中移除一条边。
-        :param u: 边的起点
-        :param v: 边的终点
-        """
-        # 安全删除 u -> v
-        if u in self.adjacency_list and v in self.adjacency_list[u]:
-            self.adjacency_list[u].remove(v)
-            if not self.adjacency_list[u]:  # 如果 u 无邻居
-                del self.adjacency_list[u]
+    def remove_edge_from_neigbor_list(self, u, v):
+        if u in self.neigbor_list and v in self.neigbor_list[u]:
+            self.neigbor_list[u].remove(v)
+            if not self.neigbor_list[u]:
+                del self.neigbor_list[u]
 
-        # 安全删除 v -> u
-        if v in self.adjacency_list and u in self.adjacency_list[v]:
-            self.adjacency_list[v].remove(u)
-            if not self.adjacency_list[v]:  # 如果 v 无邻居
-                del self.adjacency_list[v]
+        if v in self.neigbor_list and u in self.neigbor_list[v]:
+            self.neigbor_list[v].remove(u)
+            if not self.neigbor_list[v]:
+                del self.neigbor_list[v]
 
     def update_counters(self, u, v, add, weight):
-        """
-        使用权重更新三角形计数器。
-        :param u: 边的起点
-        :param v: 边的终点
-        :param add: 如果为 True，则增加计数；否则减少计数
-        :param weight: 当前时间步的权重
-        """
-        # 找到 u 和 v 的公共邻居
-        common_neighbors = self.adjacency_list[u].intersection(self.adjacency_list[v])
+        common_neighbors = self.neigbor_list[u].intersection(self.neigbor_list[v])
         delta = len(common_neighbors) * weight
 
-        # 更新全局三角形计数器
         if add:
             self.global_triangles += delta
         else:
             self.global_triangles -= delta
 
-        # 更新局部计数器
-        for w in common_neighbors:
-            if add:
-                self.local_counters[w] += weight
-            else:
-                self.local_counters[w] -= weight
-
-    def get_estimate(self):
-        """
-        返回全局三角形数量的估算值。
-        """
+    def estimate(self):
         return int(self.global_triangles)
